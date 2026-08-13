@@ -1,0 +1,59 @@
+# SYNTHETIC-DEMO tenant instance (sim-demo-001, fictional customer AcmeParcel).
+#
+# This is the customer-instance layer of the rule pack: the skeleton in
+# deploy/classification/guards.yaml keeps every customer value pending, while
+# this instance carries the (simulated) signed values from the sim W1 report
+# §5. The sign-off is synthetic — usable for demos and loader gates only,
+# never for commercial acceptance claims.
+schema_version: 1
+chain: hs-classification
+policy_id: hs-classification-policy-sim-demo-001
+policy_version: 2
+guards:
+  confidence_within_policy:
+    kind: threshold
+    status: confirmed_by_customer
+    basis: "SYNTHETIC-DEMO sim-demo-001 W1 report §5 (simulated sign-off: Wang Min 2026-09-03)"
+    parameters:
+      min_confidence: 0.55             # W1 §5: density gap between 0.50-0.60 keeps the cut stable
+      t2_min_confidence: 0.30
+  sensitive_category_forced_review:
+    kind: category_list
+    status: confirmed_by_customer
+    basis: "SYNTHETIC-DEMO signed sensitive list v1.0 (32 categories collapsed to chapter prefixes)"
+    forced_tier: T2
+    hs_chapter_prefixes:
+      - "30"                           # pharmaceuticals
+      - "33"                           # perfumery / flammable liquids
+      - "36"                           # explosives / pyrotechnics
+      - "38"                           # misc chemicals
+      - "0402"                         # dairy (food safety)
+      - "1902"                         # prepared food
+      - "2208"                         # spirits
+      - "8506"                         # primary batteries
+      - "8507"                         # accumulators (lithium)
+      - "8543"                         # e-cigarettes and similar
+      - "9018"                         # medical devices
+      - "9303"                         # arms-adjacent
+  declared_value_within_policy:
+    kind: threshold
+    status: confirmed_by_customer
+    basis: "SYNTHETIC-DEMO sim-demo-001 W1 report §5 (customer value P97.2, US-lane alignment)"
+    currency: USD
+    parameters:
+      max_declared_value: 800
+  required_fields_present:
+    kind: completeness
+    status: confirmed_by_design
+    basis: 国际小包海关编码归类链试点设计 §5
+    required_fields: [item_name, material, intended_use]
+  snapshot_current:
+    kind: freshness
+    status: confirmed_by_design
+    basis: 国际小包海关编码归类链试点设计 §5
+    compares: [tariff_table_version, risk_table_version]
+shortcuts:
+  reuse_prior_classification:
+    status: confirmed_by_design
+    basis: 国际小包海关编码归类链试点设计 §5
+    rule: an already-classified SKU with an unchanged tariff table version reuses the recorded conclusion and never re-enters Decision
